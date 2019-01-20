@@ -94,22 +94,22 @@ namespace SportsStore.Tests
 
             // Arrange - create mock temp data
             Mock<ITempDataDictionary> tempData = new Mock<ITempDataDictionary>();
-            
+
             // Arrange - create the controller
             AdminController target = new AdminController(mock.Object)
             {
                 TempData = tempData.Object
             };
-            
+
             // Arrange - create a product
             Product product = new Product { Name = "Test" };
-            
+
             // Act - try to save the product
             IActionResult result = target.Edit(product);
-            
+
             // Assert - check that the repository was called
             mock.Verify(m => m.SaveProduct(product));
-            
+
             // Assert - check the result type is a redirection
             Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Index", (result as RedirectToActionResult).ActionName);
@@ -120,24 +120,50 @@ namespace SportsStore.Tests
         {
             // Arrange - create mock repository
             Mock<IProductRepository> mock = new Mock<IProductRepository>();
+
+            // Arrange - create the controller
+            AdminController target = new AdminController(mock.Object);
+
+            // Arrange - create a product
+            Product product = new Product { Name = "Test" };
+
+            // Arrange - add an error to the model state
+            target.ModelState.AddModelError("error", "error");
+
+            // Act - try to save the product
+            IActionResult result = target.Edit(product);
+
+            // Assert - check that the repository was not called
+            mock.Verify(m => m.SaveProduct(It.IsAny<Product>()), Times.Never());
+
+            // Assert - check the method result type
+            Assert.IsType<ViewResult>(result);
+        }
+
+        [Fact]
+        public void Can_Delete_Valid_Products()
+        {
+            // Arrange - create a Product
+            Product prod = new Product { ProductID = 2, Name = "Test" };
+
+            // Arrange - create the mock repository
+            Mock<IProductRepository> mock = new Mock<IProductRepository>();
+
+            mock.Setup(m => m.Products).Returns(new Product[] {
+                new Product {ProductID = 1, Name = "P1"},
+                prod,
+                new Product {ProductID = 3, Name = "P3"},
+                }.AsQueryable<Product>());
             
             // Arrange - create the controller
             AdminController target = new AdminController(mock.Object);
             
-            // Arrange - create a product
-            Product product = new Product { Name = "Test" };
+            // Act - delete the product
+            target.Delete(prod.ProductID);
             
-            // Arrange - add an error to the model state
-            target.ModelState.AddModelError("error", "error");
-            
-            // Act - try to save the product
-            IActionResult result = target.Edit(product);
-            
-            // Assert - check that the repository was not called
-            mock.Verify(m => m.SaveProduct(It.IsAny<Product>()), Times.Never());
-            
-            // Assert - check the method result type
-            Assert.IsType<ViewResult>(result);
+            // Assert - ensure that the repository delete method was
+            // called with the correct Product
+            mock.Verify(m => m.DeleteProduct(prod.ProductID));
         }
     }
 }

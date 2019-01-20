@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using SportsStore.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace SportsStore
 {
@@ -17,8 +18,18 @@ namespace SportsStore
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var connectionString = Configuration["Data:SportStoreProducts:ConnectionString"];
-            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(
+                Configuration["Data:SportStoreProducts:ConnectionString"]));
+
+            services.AddDbContext<AppIdentityDbContext>(options =>
+                options.UseSqlServer(
+                Configuration["Data:SportStoreIdentity:ConnectionString"]));
+
+            services.AddIdentity<IdentityUser, IdentityRole>()
+            .AddEntityFrameworkStores<AppIdentityDbContext>()
+            .AddDefaultTokenProviders();
+
             services.AddTransient<IProductRepository, EFProductRepository>();
             services.AddScoped<Cart>(sp => SessionCart.GetCart(sp));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -32,11 +43,15 @@ namespace SportsStore
         {
             app.UseDeveloperExceptionPage();
             app.UseStatusCodePages();
+
             // подключаем файлы по умолчанию
             app.UseDefaultFiles();
+
             // подключаем статические файлы
             app.UseStaticFiles();
             app.UseSession();
+            app.UseAuthentication();
+
             // добавляем поддержку каталога node_modules
             app.UseFileServer(new FileServerOptions()
             {
@@ -54,6 +69,7 @@ namespace SportsStore
                     template: "{category}/Page{productPage:int}",
                     defaults: new { controller = "Product", action = "List" }
                 );
+
                 routes.MapRoute(
                     name: null,
                     template: "Page{productPage:int}",
@@ -64,6 +80,7 @@ namespace SportsStore
                         productPage = 1
                     }
                 );
+
                 routes.MapRoute(
                     name: null,
                     template: "{category}",
@@ -74,6 +91,7 @@ namespace SportsStore
                         productPage = 1
                     }
                 );
+
                 routes.MapRoute(
                     name: null,
                     template: "",
@@ -83,8 +101,10 @@ namespace SportsStore
                         action = "List",
                         productPage = 1
                     });
+
                 routes.MapRoute(name: null, template: "{controller}/{action}/{id?}");
             });
+
             SeedData.EnsurePopulated(app);
         }
     }
