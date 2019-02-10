@@ -27,8 +27,8 @@ namespace SportsStore
                 Configuration["Data:SportStoreIdentity:ConnectionString"]));
 
             services.AddIdentity<IdentityUser, IdentityRole>()
-            .AddEntityFrameworkStores<AppIdentityDbContext>()
-            .AddDefaultTokenProviders();
+                .AddEntityFrameworkStores<AppIdentityDbContext>()
+                .AddDefaultTokenProviders();
 
             services.AddTransient<IProductRepository, EFProductRepository>();
             services.AddScoped<Cart>(sp => SessionCart.GetCart(sp));
@@ -106,6 +106,7 @@ namespace SportsStore
             });
 
             SeedData.EnsurePopulated(app);
+            IdentitySeedData.EnsurePopulated(app);
         }
     }
 }
